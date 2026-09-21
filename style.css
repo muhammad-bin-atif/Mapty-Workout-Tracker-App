@@ -1,0 +1,413 @@
+/*
+ * MAPTY — full redesign
+ * Direction: "Field Console" — the map goes full-bleed behind everything,
+ * and the sidebar becomes a floating frosted-glass control panel sitting
+ * on top of it (the way modern map/nav apps work), instead of a flat
+ * side-by-side split. Workouts render as a 2-up card grid rather than a
+ * stacked list. On phones the panel becomes a bottom sheet.
+ * Classes/markup unchanged — this is CSS + layout only.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap");
+
+:root {
+  --color-run-1: #2be0ae;
+  --color-run-2: #148f6d;
+  --color-cycle-1: #ff9b6a;
+  --color-cycle-2: #ff5f6d;
+
+  --gradient-run: linear-gradient(135deg, var(--color-run-1), var(--color-run-2));
+  --gradient-cycle: linear-gradient(135deg, var(--color-cycle-1), var(--color-cycle-2));
+
+  --glass-bg: rgba(11, 16, 24, 0.7);
+  --glass-bg-soft: rgba(255, 255, 255, 0.05);
+  --glass-bg-softer: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  --color-ink: #eef2f5;
+  --color-muted: #93a1ac;
+  --color-map-bg: #0b0f14;
+
+  --panel-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.5), 0 0 0 1px var(--glass-border);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: inherit;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  font-size: 62.5%;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Manrope", sans-serif;
+  color: var(--color-ink);
+  font-weight: 400;
+  line-height: 1.6;
+  overscroll-behavior-y: none;
+  background-color: var(--color-map-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* GENERAL */
+a:link,
+a:visited {
+  color: var(--color-run-1);
+}
+
+/* MAP — full-bleed background layer, darkened/tinted with a filter
+   so it reads as part of the theme instead of a bright default map */
+#map {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background-color: var(--color-map-bg);
+}
+
+.leaflet-tile-pane {
+  filter: grayscale(25%) invert(92%) contrast(88%) hue-rotate(180deg) brightness(93%)
+    saturate(130%);
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: var(--panel-shadow) !important;
+  margin: 2.4rem !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: var(--glass-bg) !important;
+  color: var(--color-ink) !important;
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-control-attribution {
+  background: rgba(11, 16, 24, 0.6) !important;
+  color: var(--color-muted) !important;
+  border-radius: 0.6rem 0 0 0;
+}
+
+.leaflet-control-attribution a {
+  color: var(--color-run-1) !important;
+}
+
+/* SIDEBAR — floating glass control panel over the map */
+.sidebar {
+  position: fixed;
+  top: 2.4rem;
+  left: 2.4rem;
+  bottom: 2.4rem;
+  width: 38rem;
+  z-index: 10;
+
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid var(--glass-border);
+  border-radius: 2rem;
+  box-shadow: var(--panel-shadow);
+
+  padding: 2.6rem 2.4rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  height: 3.6rem;
+  align-self: flex-start;
+  margin-bottom: 2.2rem;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+
+.workouts {
+  list-style: none;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.4rem;
+  margin-right: -0.4rem;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  align-content: start;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+
+.workouts::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.workouts::-webkit-scrollbar-thumb {
+  background-color: var(--glass-border);
+  border-radius: 10rem;
+}
+
+.form {
+  grid-column: 1 / -1;
+  background-color: var(--glass-bg-soft);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.4rem;
+  padding: 1.6rem 2rem;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1.6rem;
+
+  height: 9.6rem;
+  transition: all 0.5s, transform 1ms;
+}
+
+.form.hidden {
+  transform: translateY(-2rem);
+  height: 0;
+  padding: 0 2rem;
+  margin: 0;
+  opacity: 0;
+  border-width: 0;
+}
+
+.form__row {
+  display: flex;
+  align-items: center;
+}
+
+.form__row--hidden {
+  display: none;
+}
+
+.form__label {
+  flex: 0 0 42%;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.form__input {
+  width: 100%;
+  padding: 0.5rem 1.3rem;
+  font-family: inherit;
+  font-size: 1.4rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background-color: var(--glass-bg-softer);
+  color: var(--color-ink);
+  transition: all 0.2s;
+}
+
+.form__input:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.14);
+  border-color: var(--color-run-1);
+}
+
+.form__btn {
+  display: none;
+}
+
+/* WORKOUT CARDS — compact 2-up grid tiles with a gradient accent bar */
+.workout {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--glass-bg-soft);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.4rem;
+  padding: 1.8rem 1.6rem 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem 1rem;
+}
+
+.workout::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.4rem;
+  background-image: var(--gradient-run);
+}
+
+.workout--cycling::before {
+  background-image: var(--gradient-cycle);
+}
+
+.workout:hover {
+  background-color: var(--glass-bg-softer);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+}
+
+.workout__title {
+  grid-column: 1 / -1;
+  font-family: "Space Grotesk", "Manrope", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 0.3rem;
+  color: var(--color-ink);
+}
+
+.workout__details {
+  display: flex;
+  align-items: baseline;
+}
+
+.workout__icon {
+  font-size: 1.6rem;
+  margin-right: 0.3rem;
+  height: 0.28rem;
+}
+
+.workout__value {
+  font-family: "Space Grotesk", "Manrope", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+
+.workout__unit {
+  font-size: 1rem;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.copyright {
+  margin-top: 1.6rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--glass-border);
+  font-size: 1.2rem;
+  text-align: center;
+  color: var(--color-muted);
+}
+
+.twitter-link:link,
+.twitter-link:visited {
+  color: var(--color-muted);
+  transition: all 0.2s;
+}
+
+.twitter-link:hover,
+.twitter-link:active {
+  color: var(--color-run-1);
+}
+
+/* Popup restyled to match the glass panel language */
+.leaflet-popup .leaflet-popup-content-wrapper {
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  color: var(--color-ink);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.2rem;
+  padding-right: 0.6rem;
+  box-shadow: var(--panel-shadow);
+}
+
+.leaflet-popup .leaflet-popup-content {
+  font-size: 1.5rem;
+}
+
+.leaflet-popup .leaflet-popup-tip {
+  background-color: var(--glass-bg);
+}
+
+.running-popup .leaflet-popup-content-wrapper {
+  border-left: 4px solid var(--color-run-1);
+}
+.cycling-popup .leaflet-popup-content-wrapper {
+  border-left: 4px solid var(--color-cycle-1);
+}
+
+/* ============================================================
+   RESPONSIVE
+   The panel stays a floating card down to tablet width, then
+   becomes a bottom sheet over the full-screen map on phones.
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 34rem;
+    padding: 2.2rem 2rem 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 58%;
+  }
+
+  .sidebar {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 62vh;
+    border-radius: 2rem 2rem 0 0;
+    padding: 1.8rem 2rem 1.6rem;
+  }
+
+  .logo {
+    height: 3.2rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .workouts {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .form {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    max-height: 68vh;
+    border-radius: 1.6rem 1.6rem 0 0;
+    padding: 1.6rem 1.6rem 1.4rem;
+  }
+
+  .workouts {
+    grid-template-columns: 1fr;
+  }
+
+  .form {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 0.8rem;
+    padding: 1.4rem 1.6rem;
+  }
+
+  .form__label {
+    flex: 0 0 40%;
+  }
+
+  .leaflet-control-zoom {
+    margin: 1.4rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
