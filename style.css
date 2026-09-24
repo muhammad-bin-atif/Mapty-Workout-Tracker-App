@@ -137,9 +137,9 @@ a:visited {
   overflow-x: hidden;
   padding-right: 0.4rem;
   margin-right: -0.4rem;
-
+/* 
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr; */
   gap: 1.2rem;
   align-content: start;
 
@@ -228,6 +228,7 @@ a:visited {
   padding: 1.8rem 1.6rem 1.5rem;
   cursor: pointer;
   transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+  margin-bottom: 1.75rem;
 
   display: grid;
   grid-template-columns: 1fr 1fr;
