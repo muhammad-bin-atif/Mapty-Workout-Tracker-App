@@ -96,13 +96,10 @@ class App {
   _loadMap(position) {
     const { latitude } = position.coords;
     const { longitude } = position.coords;
-    console.log(`https://www.google.pt/maps/${latitude},${longitude}`);
 
     const coords = [latitude, longitude];
 
-    console.log(this);
     this.#map = L.map('map').setView(coords, this.#mapZoomLevel);
-    console.log(this.#map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors, Tiles style by HOT',
@@ -260,12 +257,10 @@ class App {
 
   _moveToPopup(e){
     const workoutEl = e.target.closest('.workout');
-    console.log(workoutEl);
 
     if(!workoutEl) return;
 
     const workout = this.#workouts.find( work => work.id === workoutEl.dataset.id)
-    console.log(workout);
 
     this.#map.setView(workout.coords , this.#mapZoomLevel , {
       animate: true, 
@@ -280,7 +275,6 @@ class App {
 
    _getLocalStorage(){
     const data = JSON.parse(localStorage.getItem('workouts'))
-    console.log(data);
     if(!data) return
     this.#workouts = data
      
